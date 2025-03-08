@@ -7,6 +7,12 @@
         <postStartupActivity
                 implementation="com.microsoft.azure.toolkit.intellij.java.sdk.MavenProjectReportGenerator"/>
         <postStartupActivity implementation="com.microsoft.azure.toolkit.intellij.java.sdk.utils.RuleConfigLoader"/>
+
+        <codeInsight.inlayProvider
+                language="JAVA"
+                implementationClass="com.microsoft.azure.toolkit.intellij.java.sdk.AzureResourceInlayHintsProvider"
+                isEnabledByDefault="true"/>
+
         <localInspection
                 language="JAVA"
                 shortName="ConnectionStringCheck"
