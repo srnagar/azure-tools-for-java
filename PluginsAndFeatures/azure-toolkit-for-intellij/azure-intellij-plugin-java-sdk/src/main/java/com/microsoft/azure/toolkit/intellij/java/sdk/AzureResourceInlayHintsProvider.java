@@ -19,6 +19,7 @@ import com.intellij.openapi.util.IconLoader;
 import com.intellij.psi.PsiConstructorCall;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiNewExpression;
 import org.jetbrains.annotations.Nls;
 
 import javax.annotation.Nonnull;
@@ -31,6 +32,7 @@ public class AzureResourceInlayHintsProvider implements InlayHintsProvider<NoSet
 
     private static final Icon ICON = IconLoader.getIcon("/icons/Common/Azure.svg", AzureResourceInlayHintsProvider.class);
     private static final Cursor HAND_CURSOR = new Cursor(Cursor.HAND_CURSOR);
+    private static final String AZURE_PACKAGE = "com.azure";
     private static final InlayPresentationFactory.HoverListener HOVER_LISTENER = new InlayPresentationFactory.HoverListener() {
         @Override
         public void onHover(@Nonnull MouseEvent mouseEvent, @Nonnull Point point) {
@@ -39,7 +41,6 @@ public class AzureResourceInlayHintsProvider implements InlayHintsProvider<NoSet
 
         @Override
         public void onHoverFinished() {
-
         }
     };
 
@@ -49,15 +50,19 @@ public class AzureResourceInlayHintsProvider implements InlayHintsProvider<NoSet
         return new FactoryInlayHintsCollector(editor) {
             @Override
             public boolean collect(@Nonnull PsiElement psiElement, @Nonnull Editor editor, @Nonnull InlayHintsSink inlayHintsSink) {
-                if(psiElement instanceof PsiConstructorCall) {
-                    int endOffset = psiElement.getTextRange().getEndOffset();
-                    InlayPresentation iconPresentation = new PresentationFactory(editor).icon(ICON);
-                    InlayPresentationFactory.ClickListener azureClickListener = (mouseEvent, point) -> {
-                        AzureResourceListWindow.showPopup(psiElement.getText(), mouseEvent.getComponent());
-                    };
-                    OnClickPresentation azureClickPresentation = new OnClickPresentation(iconPresentation, azureClickListener);
-                    WithCursorOnHoverPresentation presentation = new WithCursorOnHoverPresentation(azureClickPresentation, HAND_CURSOR, editor);
-                    inlayHintsSink.addInlineElement(endOffset, true, presentation, true);
+                if(psiElement instanceof PsiNewExpression) {
+                    PsiNewExpression newExpression = (PsiNewExpression) psiElement;
+                    if (newExpression.getClassReference() != null && newExpression.getClassReference().getCanonicalText() != null
+                            && newExpression.getClassReference().getCanonicalText().startsWith(AZURE_PACKAGE)) {
+                        int endOffset = psiElement.getTextRange().getEndOffset();
+                        InlayPresentation iconPresentation = new PresentationFactory(editor).icon(ICON);
+                        InlayPresentationFactory.ClickListener azureClickListener = (mouseEvent, point) -> {
+                            AzureResourceListWindow.showPopup(psiElement.getText(), mouseEvent.getComponent());
+                        };
+                        OnClickPresentation azureClickPresentation = new OnClickPresentation(iconPresentation, azureClickListener);
+                        WithCursorOnHoverPresentation presentation = new WithCursorOnHoverPresentation(azureClickPresentation, HAND_CURSOR, editor);
+                        inlayHintsSink.addInlineElement(endOffset, true, presentation, true);
+                    }
                 }
                 return true;
             }

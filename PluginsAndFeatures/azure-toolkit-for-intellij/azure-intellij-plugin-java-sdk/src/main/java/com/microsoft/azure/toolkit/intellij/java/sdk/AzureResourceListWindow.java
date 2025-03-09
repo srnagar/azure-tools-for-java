@@ -3,20 +3,23 @@ package com.microsoft.azure.toolkit.intellij.java.sdk;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.ui.HyperlinkLabel;
 import com.intellij.ui.components.JBScrollPane;
-import com.intellij.ui.table.JBTable;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.resource.AzureResources;
 import com.microsoft.azure.toolkit.lib.resource.ResourcesServiceSubscription;
+import org.jdesktop.swingx.JXHyperlink;
+import org.jdesktop.swingx.JXTable;
+import org.jdesktop.swingx.hyperlink.AbstractHyperlinkAction;
+import org.jdesktop.swingx.renderer.CellContext;
+import org.jdesktop.swingx.renderer.DefaultTableRenderer;
+import org.jdesktop.swingx.renderer.HyperlinkProvider;
+import org.jdesktop.swingx.renderer.JXRendererHyperlink;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.Arrays;
 import java.util.Vector;
 
@@ -59,40 +62,26 @@ public class AzureResourceListWindow {
             }
         };
 
-        // Create table
-        JBTable table = new JBTable(tableModel);
+        // JTable/JBTable consumes all events and making individual cell clickable is easier with JXTable
+        JXTable table = new JXTable(tableModel);
         table.setPreferredScrollableViewportSize(new Dimension(500, 350));
         table.setFillsViewportHeight(true);
 
+        AbstractHyperlinkAction<Object> simpleAction = new AbstractHyperlinkAction<Object>(null) {
+            public void actionPerformed(ActionEvent e) {
+                if (e.getSource() instanceof JXRendererHyperlinkText) {
+                    JXRendererHyperlinkText source = (JXRendererHyperlinkText) e.getSource();
+                    BrowserUtil.browse(source.getOriginalUrl());
+                } else {
+                    BrowserUtil.browse(e.getActionCommand());
+                }
+            }
+        };
+        HyperlinkTextProvider hyperlinkProvider = new HyperlinkTextProvider(simpleAction);
+        TableCellRenderer renderer = new DefaultTableRenderer(hyperlinkProvider);
+
         // Set hyperlink renderer for last column
-        table.getColumnModel().getColumn(3).setCellRenderer(new LinkRenderer());
-
-        table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if(table.getSelectedColumn() == 3) {
-                    String url = (String) table.getValueAt(table.getSelectedRow(), table.getSelectedColumn());
-                    BrowserUtil.browse(url);
-                }
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                int col = table.columnAtPoint(new Point(e.getX(), e.getY()));
-                if (col == 3) {
-                    e.getComponent().setCursor(HAND_CURSOR);
-                }
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                int col = table.columnAtPoint(new Point(e.getX(), e.getY()));
-                if (col != 3) {
-                    e.getComponent().setCursor(DEFAULT_CURSOR);
-                }
-            }
-        });
-
+        table.getColumnModel().getColumn(3).setCellRenderer(renderer);
 
         // Create a scroll pane for the table
         JScrollPane scrollPane = new JBScrollPane(table);
@@ -135,20 +124,32 @@ public class AzureResourceListWindow {
         popup.showInCenterOf(parent);
     }
 
-
-    // Renderer for clickable links
-    static class LinkRenderer extends JPanel implements TableCellRenderer {
+    private static class HyperlinkTextProvider extends HyperlinkProvider {
+        HyperlinkTextProvider(AbstractHyperlinkAction action) {
+            super(action);
+        }
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if (value instanceof String) {
-                String url = (String) value;
-                HyperlinkLabel linkLabel = new HyperlinkLabel("More details");
-                linkLabel.setHyperlinkTarget(url);
-                return linkLabel;
-            }
-            return new JLabel(value.toString());
+        protected void format(CellContext context) {
+            super.format(context);
+            ((JXHyperlink) this.rendererComponent).setText("More Details");
+            ((JXRendererHyperlinkText) this.rendererComponent).setOriginalUrl((String) context.getValue());
         }
 
+        @Override
+        protected JXHyperlink createRendererComponent() {
+            return new JXRendererHyperlinkText();
+        }
+    }
 
+    private static class JXRendererHyperlinkText extends JXRendererHyperlink {
+        private String originalUrl;
+
+        public void setOriginalUrl(String originalUrl) {
+            this.originalUrl = originalUrl;
+        }
+
+        public String getOriginalUrl() {
+            return this.originalUrl;
+        }
     }
 }
