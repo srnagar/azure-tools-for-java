@@ -121,5 +121,31 @@
                 level="WARNING"
                 implementationClass="com.microsoft.azure.toolkit.intellij.java.sdk.analyzer.UseOfBlockOnAsyncClientsCheck">
         </localInspection>
+
+        <!-- Add a tool window factory -->
+        <toolWindow id="Ask Azure" secondary="true" icon="/icons/Common/AskAzure.svg" anchor="right"
+                    factoryClass="com.microsoft.azure.toolkit.intellij.java.sdk.ai.AskAzureChatToolWindowFactory"/>
+
+        <toolWindow id="Azd" secondary="true" icon="/icons/Common/azd.svg" anchor="left"
+                    factoryClass="com.microsoft.azure.toolkit.intellij.java.sdk.azd.AzdToolWindowFactory"/>
     </extensions>
+
+    <actions>
+        <action id="AzureToolkit.AskAzureChatAction"
+                class="com.microsoft.azure.toolkit.intellij.java.sdk.ai.AskAzureChatAction"
+                text="Ask Azure"
+                description="Open chat window"
+                icon="/icons/Common/AskAzure.svg">
+            <add-to-group group-id="NavBarToolBar" anchor="last"/>
+        </action>
+
+        <action id="AzureToolkit.AzdRunAction" class="com.microsoft.azure.toolkit.intellij.java.sdk.azd.RunToolAction"
+                text="Run azd"
+                description="Run azd CLI tool"
+                icon="/icons/Common/azd.svg">
+            <add-to-group group-id="NavBarToolBar" anchor="last"/>
+            <keyboard-shortcut first-keystroke="control alt R" keymap="$default"/>
+        </action>
+
+    </actions>
 </idea-plugin>

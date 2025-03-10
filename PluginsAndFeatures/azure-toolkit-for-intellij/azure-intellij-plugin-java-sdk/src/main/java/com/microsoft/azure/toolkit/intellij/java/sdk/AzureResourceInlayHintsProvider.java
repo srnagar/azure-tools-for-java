@@ -53,7 +53,8 @@ public class AzureResourceInlayHintsProvider implements InlayHintsProvider<NoSet
                 if(psiElement instanceof PsiNewExpression) {
                     PsiNewExpression newExpression = (PsiNewExpression) psiElement;
                     if (newExpression.getClassReference() != null && newExpression.getClassReference().getCanonicalText() != null
-                            && newExpression.getClassReference().getCanonicalText().startsWith(AZURE_PACKAGE)) {
+                            && newExpression.getClassReference().getCanonicalText().startsWith(AZURE_PACKAGE)
+                            && newExpression.getClassReference().getCanonicalText().contains("ClientBuilder")) {
                         int endOffset = psiElement.getTextRange().getEndOffset();
                         InlayPresentation iconPresentation = new PresentationFactory(editor).icon(ICON);
                         InlayPresentationFactory.ClickListener azureClickListener = (mouseEvent, point) -> {

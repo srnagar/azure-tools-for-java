@@ -4,6 +4,7 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.ui.components.JBScrollPane;
+import com.microsoft.azure.toolkit.intellij.java.sdk.azd.ToolItem;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.resource.AzureResources;
 import com.microsoft.azure.toolkit.lib.resource.ResourcesServiceSubscription;
@@ -16,6 +17,8 @@ import org.jdesktop.swingx.renderer.HyperlinkProvider;
 import org.jdesktop.swingx.renderer.JXRendererHyperlink;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
@@ -88,7 +91,7 @@ public class AzureResourceListWindow {
 
         // Create text field and send button
         JTextField textField = new JTextField();
-        JButton sendButton = new JButton("Send");
+        JButton sendButton = new JButton("Run");
 
         // Send button action
         sendButton.addActionListener((ActionEvent e) -> {
@@ -99,6 +102,19 @@ public class AzureResourceListWindow {
                         table.getValueAt(selectedRow, 2);
                 String enteredText = textField.getText();
                 System.out.println("Selected: " + selectedText + ", Message: " + enteredText);
+            }
+        });
+
+        // Add table selection listener
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    int selectedRow = table.getSelectedRow();
+                    if (selectedRow >= 0) {
+                        textField.setText("azd add " + (String) tableModel.getValueAt(selectedRow, 0));
+                    }
+                }
             }
         });
 
@@ -122,6 +138,8 @@ public class AzureResourceListWindow {
                 .createPopup();
 
         popup.showInCenterOf(parent);
+
+
     }
 
     private static class HyperlinkTextProvider extends HyperlinkProvider {
