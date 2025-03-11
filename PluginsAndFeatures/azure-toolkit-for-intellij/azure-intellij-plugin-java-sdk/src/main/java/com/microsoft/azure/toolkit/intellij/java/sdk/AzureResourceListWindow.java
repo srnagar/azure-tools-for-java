@@ -37,7 +37,22 @@ public class AzureResourceListWindow {
         final Vector<Vector<String>> items = new Vector<>();
 
         AzureResources az = Azure.az(AzureResources.class);
-        String namespaceType = title.contains("Configuration") ? "AppConfiguration" : "Storage";
+        String namespaceType;
+        if (title.contains("Configuration")) {
+            namespaceType = "AppConfiguration";
+        } else if (title.contains("Storage")) {
+            namespaceType = "Storage";
+        } else if (title.contains("OpenAI")) {
+            namespaceType = "CognitiveService";
+        } else if (title.contains("Search")) {
+            namespaceType = "Search";
+        } else if (title.contains("ServiceBus")) {
+            namespaceType = "ServiceBus";
+        } else if (title.contains("EventHub")) {
+            namespaceType = "EventHub";
+        } else {
+            namespaceType = "KeyVault";
+        }
 
         ResourcesServiceSubscription resourcesServiceSubscription = Azure.az(AzureResources.class)
                 .list()
