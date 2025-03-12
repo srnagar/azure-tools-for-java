@@ -154,7 +154,6 @@ public class AzureResourceListWindow {
 
         popup.showInCenterOf(parent);
 
-
     }
 
     private static class HyperlinkTextProvider extends HyperlinkProvider {

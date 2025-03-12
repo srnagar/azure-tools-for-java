@@ -40,10 +40,14 @@ public class ToolItem {
 
     private String name;
     private String description;
+    private String repoLink;
+    private String command;
 
-    public ToolItem(String name, String description) {
+    public ToolItem(String name, String repoLink, String description, String command) {
         this.name = name;
-        this.description = description;
+        this.description = description == null ? "For more details, see the link below" : description;
+        this.repoLink = repoLink == null ? "https://azure.github.io/awesome-azd/" : repoLink;
+        this.command = command;
     }
 
     public String getName() {
@@ -60,6 +64,24 @@ public class ToolItem {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getRepoLink() {
+        return repoLink;
+    }
+
+    public ToolItem setRepoLink(String repoLink) {
+        this.repoLink = repoLink;
+        return this;
+    }
+
+    public String getCommand() {
+        return command;
+    }
+
+    public ToolItem setCommand(String command) {
+        this.command = command;
+        return this;
     }
 
     @Override
@@ -116,8 +138,8 @@ public class ToolItem {
                     String[] parts = line.trim().split("   ");
                     if (parts.length >= 2) {
                         String name = parts[0].trim();
-                        String description = AZD_COMMAND_LOOKUP.get(name);
-                        items.add(new ToolItem(name, description));
+                        String azdCommand = AZD_COMMAND_LOOKUP.get(name);
+                        items.add(new ToolItem(name, null, null, azdCommand));
                     }
                 }
             } else {
@@ -142,9 +164,9 @@ public class ToolItem {
      */
     private static List<ToolItem> createFallbackData() {
         List<ToolItem> items = new ArrayList<>();
-        items.add(new ToolItem("fallback-item-1", "/path/to/repository/1"));
-        items.add(new ToolItem("fallback-item-2", "/path/to/repository/2"));
-        items.add(new ToolItem("fallback-item-3", "/path/to/repository/3"));
+        items.add(new ToolItem("fallback-item-1", null, null,"/path/to/repository/1"));
+        items.add(new ToolItem("fallback-item-2", null, null,"/path/to/repository/2"));
+        items.add(new ToolItem("fallback-item-3", null, null,"/path/to/repository/3"));
         return items;
     }
 }

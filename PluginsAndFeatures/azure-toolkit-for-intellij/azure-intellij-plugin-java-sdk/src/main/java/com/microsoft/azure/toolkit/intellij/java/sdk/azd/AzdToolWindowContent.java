@@ -1,190 +1,299 @@
 package com.microsoft.azure.toolkit.intellij.java.sdk.azd;
 
-import com.intellij.execution.impl.ConsoleViewImpl;
-import com.intellij.execution.ui.ConsoleView;
-import com.intellij.execution.ui.ConsoleViewContentType;
-import com.intellij.openapi.actionSystem.ActionManager;
-import com.intellij.openapi.actionSystem.ActionToolbar;
-import com.intellij.openapi.actionSystem.DefaultActionGroup;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.ui.JBSplitter;
-import com.intellij.ui.components.JBScrollPane;
-import com.intellij.ui.table.JBTable;
+import com.intellij.ui.JBColor;
+import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBPanel;
 import com.intellij.util.ui.JBUI;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.geom.RoundRectangle2D;
+
+import static java.awt.Font.DIALOG;
 
 public class AzdToolWindowContent {
     // Command to get the data
-    private static final String DATA_COMMAND = "azd template list --filter java";
+//    private static final String DATA_COMMAND = "azd template list --filter java";
+//
+//    private final Project project;
+//    private final ToolWindow toolWindow;
+//    private JPanel contentPanel;
+//    private JTextField commandTextField;
+//    private JBTable toolItemsTable;
+//    private ToolItemTableModel tableModel;
+//    private ConsoleView consoleView;
+//
+//    public AzdToolWindowContent(Project project, ToolWindow toolWindow) {
+//        this.project = project;
+//        this.toolWindow = toolWindow;
+//        createUIComponents();
+//        loadData();
+//    }
+//
+//    private void createUIComponents() {
+//        // Create main content panel
+//        contentPanel = new JPanel(new BorderLayout());
+//
+//        // Create the splitter panel for table and console
+//        JBSplitter splitter = new JBSplitter(true, 0.7f);
+//
+//        // Create the top panel with table and command input
+//        JPanel topPanel = new JPanel(new BorderLayout());
+//
+//        // Create table with tool items
+//        tableModel = new ToolItemTableModel(new ArrayList<>());
+//        toolItemsTable = new JBTable(tableModel);
+//        toolItemsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+//
+//        // Set column widths
+//        TableColumn nameColumn = toolItemsTable.getColumnModel().getColumn(0);
+//        nameColumn.setPreferredWidth(100);
+//        TableColumn descColumn = toolItemsTable.getColumnModel().getColumn(1);
+//        descColumn.setPreferredWidth(300);
+//
+//        JBScrollPane tableScrollPane = new JBScrollPane(toolItemsTable);
+//        topPanel.add(tableScrollPane, BorderLayout.CENTER);
+//
+//        // Create command panel with text field and button
+//        JPanel commandPanel = new JPanel(new BorderLayout());
+//        commandPanel.setBorder(JBUI.Borders.empty(5));
+//
+//        commandTextField = new JTextField();
+//        JButton runButton = new JButton("Run");
+//        commandPanel.add(commandTextField, BorderLayout.CENTER);
+//        commandPanel.add(runButton, BorderLayout.EAST);
+//
+//        topPanel.add(commandPanel, BorderLayout.SOUTH);
+//
+//        // Create console panel
+//        consoleView = new ConsoleViewImpl(project, true);
+//        JPanel consolePanel = new JPanel(new BorderLayout());
+//        consolePanel.add(consoleView.getComponent(), BorderLayout.CENTER);
+//
+//        // Add console toolbar
+//        DefaultActionGroup actionGroup = new DefaultActionGroup();
+//        actionGroup.add(new RunToolAction(this));
+//        ActionToolbar actionToolbar = ActionManager.getInstance().createActionToolbar("AzdToolConsoleToolbar", actionGroup, false);
+//        consolePanel.add(actionToolbar.getComponent(), BorderLayout.WEST);
+//
+//        // Add reload button to the top panel
+//        JButton reloadButton = new JButton("Reload Data");
+//        reloadButton.addActionListener(e -> loadData());
+//        JPanel topButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+//        topButtonPanel.add(reloadButton);
+//        topPanel.add(topButtonPanel, BorderLayout.NORTH);
+//
+//        // Add panels to splitter
+//        splitter.setFirstComponent(topPanel);
+//        splitter.setSecondComponent(consolePanel);
+//
+//        contentPanel.add(splitter, BorderLayout.CENTER);
+//
+//        // Add table selection listener
+//        toolItemsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+//            @Override
+//            public void valueChanged(ListSelectionEvent e) {
+//                if (!e.getValueIsAdjusting()) {
+//                    int selectedRow = toolItemsTable.getSelectedRow();
+//                    if (selectedRow >= 0) {
+//                        ToolItem selectedItem = tableModel.getItemAt(selectedRow);
+//                        commandTextField.setText(selectedItem.getDescription());
+//                    }
+//                }
+//            }
+//        });
+//
+//        // Add run button action
+//        runButton.addActionListener(new AbstractAction() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//                runCommand();
+//            }
+//        });
+//    }
+//
+//    /**
+//     * Load data from command execution
+//     */
+//    private void loadData() {
+//        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Loading Tool Data", false) {
+//            @Override
+//            public void run(@NotNull ProgressIndicator indicator) {
+//                indicator.setText("Executing command to load tool data...");
+//
+//                final List<ToolItem> items = ToolItem.createDataFromCommand(project, DATA_COMMAND);
+//
+//                ApplicationManager.getApplication().invokeLater(() -> {
+//                    tableModel = new ToolItemTableModel(items);
+//                    toolItemsTable.setModel(tableModel);
+//
+//                    // Reset column widths as they may be lost when model changes
+//                    TableColumn nameColumn = toolItemsTable.getColumnModel().getColumn(0);
+//                    nameColumn.setPreferredWidth(100);
+//                    TableColumn descColumn = toolItemsTable.getColumnModel().getColumn(1);
+//                    descColumn.setPreferredWidth(300);
+//
+//                    // If there are items, select the first one
+//                    if (!items.isEmpty()) {
+//                        toolItemsTable.getSelectionModel().setSelectionInterval(0, 0);
+//                    }
+//                });
+//            }
+//        });
+//    }
+//
+//    public JPanel getContentPanel() {
+//        return contentPanel;
+//    }
+//
+//    public void runCommand() {
+//        String command = commandTextField.getText().trim();
+//        if (!command.isEmpty()) {
+//            // Clear previous output
+//            consoleView.clear();
+//
+//            // Print command
+//            consoleView.print("> " + command + "\n", ConsoleViewContentType.USER_INPUT);
+//
+//            // Execute command and show result
+//            ToolRunner.runTool(project, command, consoleView);
+//        }
+//    }
+//
+//    public String getCommand() {
+//        return commandTextField.getText();
+//    }
+//
+//    public Project getProject() {
+//        return project;
+//    }
+//
+//    public ConsoleView getConsoleView() {
+//        return consoleView;
+//    }
+
 
     private final Project project;
-    private final ToolWindow toolWindow;
     private JPanel contentPanel;
-    private JTextField commandTextField;
-    private JBTable toolItemsTable;
-    private ToolItemTableModel tableModel;
-    private ConsoleView consoleView;
 
     public AzdToolWindowContent(Project project, ToolWindow toolWindow) {
         this.project = project;
-        this.toolWindow = toolWindow;
-        createUIComponents();
-        loadData();
+        createUIComponents(toolWindow);
     }
 
-    private void createUIComponents() {
-        // Create main content panel
-        contentPanel = new JPanel(new BorderLayout());
+    private void createUIComponents(ToolWindow toolWindow) {
+        contentPanel = new JBPanel<>(new BorderLayout());
 
-        // Create the splitter panel for table and console
-        JBSplitter splitter = new JBSplitter(true, 0.7f);
+        JPanel itemsPanel = new JPanel();
+        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
+        itemsPanel.setOpaque(false);
 
-        // Create the top panel with table and command input
-        JPanel topPanel = new JPanel(new BorderLayout());
+        JButton showPopupButton = new IconOnlyButton(AllIcons.General.Vcs);
+        showPopupButton.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
 
-        // Create table with tool items
-        tableModel = new ToolItemTableModel(new ArrayList<>());
-        toolItemsTable = new JBTable(tableModel);
-        toolItemsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JButton provisionResources = new IconOnlyButton(AllIcons.Actions.Upload);
+        provisionResources.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
 
-        // Set column widths
-        TableColumn nameColumn = toolItemsTable.getColumnModel().getColumn(0);
-        nameColumn.setPreferredWidth(100);
-        TableColumn descColumn = toolItemsTable.getColumnModel().getColumn(1);
-        descColumn.setPreferredWidth(300);
+        JButton deployResources = new IconOnlyButton(AllIcons.Actions.Execute);
+        deployResources.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
 
-        JBScrollPane tableScrollPane = new JBScrollPane(toolItemsTable);
-        topPanel.add(tableScrollPane, BorderLayout.CENTER);
+        JButton provisionAndDeploy = new IconOnlyButton(AllIcons.Actions.RunAll);
+        provisionAndDeploy.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
 
-        // Create command panel with text field and button
-        JPanel commandPanel = new JPanel(new BorderLayout());
-        commandPanel.setBorder(JBUI.Borders.empty(5));
+        addButtonWrapper(itemsPanel, showPopupButton, "Initialize From Templates");
+        addButtonWrapper(itemsPanel, provisionResources, "Provision Azure Resources");
+        addButtonWrapper(itemsPanel, deployResources, "Deploy to Azure");
+        addButtonWrapper(itemsPanel, provisionAndDeploy, "Provision & Deploy to Azure");
 
-        commandTextField = new JTextField();
-        JButton runButton = new JButton("Run");
-        commandPanel.add(commandTextField, BorderLayout.CENTER);
-        commandPanel.add(runButton, BorderLayout.EAST);
+        JBLabel descriptionLabel = new JBLabel("Click to view available tools");
+        descriptionLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        descriptionLabel.setBorder(JBUI.Borders.empty(5, 0, 0, 0));
 
-        topPanel.add(commandPanel, BorderLayout.SOUTH);
+        JBPanel<JBPanel<?>> centerPanel = new JBPanel<>(new BorderLayout());
+        centerPanel.add(itemsPanel, BorderLayout.CENTER);
+        centerPanel.add(descriptionLabel, BorderLayout.SOUTH);
 
-        // Create console panel
-        consoleView = new ConsoleViewImpl(project, true);
-        JPanel consolePanel = new JPanel(new BorderLayout());
-        consolePanel.add(consoleView.getComponent(), BorderLayout.CENTER);
-
-        // Add console toolbar
-        DefaultActionGroup actionGroup = new DefaultActionGroup();
-        actionGroup.add(new RunToolAction(this));
-        ActionToolbar actionToolbar = ActionManager.getInstance().createActionToolbar("AzdToolConsoleToolbar", actionGroup, false);
-        consolePanel.add(actionToolbar.getComponent(), BorderLayout.WEST);
-
-        // Add reload button to the top panel
-        JButton reloadButton = new JButton("Reload Data");
-        reloadButton.addActionListener(e -> loadData());
-        JPanel topButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topButtonPanel.add(reloadButton);
-        topPanel.add(topButtonPanel, BorderLayout.NORTH);
-
-        // Add panels to splitter
-        splitter.setFirstComponent(topPanel);
-        splitter.setSecondComponent(consolePanel);
-
-        contentPanel.add(splitter, BorderLayout.CENTER);
-
-        // Add table selection listener
-        toolItemsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) {
-                    int selectedRow = toolItemsTable.getSelectedRow();
-                    if (selectedRow >= 0) {
-                        ToolItem selectedItem = tableModel.getItemAt(selectedRow);
-                        commandTextField.setText(selectedItem.getDescription());
-                    }
-                }
-            }
-        });
-
-        // Add run button action
-        runButton.addActionListener(new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                runCommand();
-            }
-        });
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
     }
 
-    /**
-     * Load data from command execution
-     */
-    private void loadData() {
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Loading Tool Data", false) {
-            @Override
-            public void run(@NotNull ProgressIndicator indicator) {
-                indicator.setText("Executing command to load tool data...");
+    private void addButtonWrapper(JPanel panel, JButton button, String label) {
+        JPanel itemPanel = new JPanel();
+        itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
+        itemPanel.setOpaque(false);
+        itemPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-                final List<ToolItem> items = ToolItem.createDataFromCommand(project, DATA_COMMAND);
+//        JPanel buttonWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+//        buttonWrapper.setOpaque(false);
+//        buttonWrapper.add(button);
 
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    tableModel = new ToolItemTableModel(items);
-                    toolItemsTable.setModel(tableModel);
+        // Create a label for the text
+        JLabel textLabel = new JLabel(label);
+        textLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        textLabel.setFont(JBUI.Fonts.create(DIALOG, 14));
 
-                    // Reset column widths as they may be lost when model changes
-                    TableColumn nameColumn = toolItemsTable.getColumnModel().getColumn(0);
-                    nameColumn.setPreferredWidth(100);
-                    TableColumn descColumn = toolItemsTable.getColumnModel().getColumn(1);
-                    descColumn.setPreferredWidth(300);
+        itemPanel.add(button);
+        itemPanel.add(textLabel);
 
-                    // If there are items, select the first one
-                    if (!items.isEmpty()) {
-                        toolItemsTable.getSelectionModel().setSelectionInterval(0, 0);
-                    }
-                });
-            }
-        });
+        panel.add(itemPanel);
+        panel.add(Box.createVerticalStrut(15)); // Small gap between icons
     }
 
     public JPanel getContentPanel() {
         return contentPanel;
     }
 
-    public void runCommand() {
-        String command = commandTextField.getText().trim();
-        if (!command.isEmpty()) {
-            // Clear previous output
-            consoleView.clear();
 
-            // Print command
-            consoleView.print("> " + command + "\n", ConsoleViewContentType.USER_INPUT);
+    // Icon-only button with rounded square shape
+    private static class IconOnlyButton extends JButton {
+        private static final int BUTTON_SIZE = 50; // Fixed size for the button
+        private static final int ARC_SIZE = 10;
 
-            // Execute command and show result
-            ToolRunner.runTool(project, command, consoleView);
+        private final Icon icon;
+
+        public IconOnlyButton(Icon icon) {
+            this.icon = icon;
+
+            setOpaque(false);
+            setContentAreaFilled(false);
+            setFocusPainted(false);
+            setBorderPainted(false);
+
+            // Fixed size
+            setMinimumSize(new Dimension(BUTTON_SIZE, BUTTON_SIZE));
+            setPreferredSize(new Dimension(BUTTON_SIZE, BUTTON_SIZE));
+            setMaximumSize(new Dimension(BUTTON_SIZE, BUTTON_SIZE));
         }
-    }
 
-    public String getCommand() {
-        return commandTextField.getText();
-    }
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-    public Project getProject() {
-        return project;
-    }
+            // Button background based on state
+            if (getModel().isPressed()) {
+                g2.setColor(JBColor.GRAY);
+            } else if (getModel().isRollover()) {
+                g2.setColor(JBColor.LIGHT_GRAY);
+            } else {
+                g2.setColor(new JBColor(new Color(240, 240, 240, 200), new Color(60, 63, 65)));
+            }
 
-    public ConsoleView getConsoleView() {
-        return consoleView;
+            // Draw rounded square for the button
+            g2.fill(new RoundRectangle2D.Double(0, 0, BUTTON_SIZE - 1, BUTTON_SIZE - 1, ARC_SIZE, ARC_SIZE));
+
+            // Draw the icon in the center
+            if (icon != null) {
+                int iconWidth = icon.getIconWidth();
+                int iconHeight = icon.getIconHeight();
+                int iconX = (BUTTON_SIZE - iconWidth) / 2;
+                int iconY = (BUTTON_SIZE - iconHeight) / 2;
+                icon.paintIcon(this, g2, iconX, iconY);
+            }
+
+            g2.dispose();
+        }
     }
 }

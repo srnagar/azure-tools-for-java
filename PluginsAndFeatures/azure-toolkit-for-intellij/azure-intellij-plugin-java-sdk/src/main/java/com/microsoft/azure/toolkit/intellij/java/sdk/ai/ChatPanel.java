@@ -17,7 +17,6 @@ import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -168,54 +167,23 @@ public class ChatPanel extends JPanel {
 
     // Method to implement real chat service integration with streaming
     public void connectToRealChatService(String userMessage) {
-        // This is where you would implement your actual chat service integration
-        // The implementation would depend on the specific API you're using
 
-        // Example implementation structure:
-        /*
-        ChatServiceClient client = new ChatServiceClient();
-        client.sendMessageWithStreaming(userMessage, new ChatServiceCallback() {
-            @Override
-            public void onToken(String token) {
-                SwingUtilities.invokeLater(() -> {
-                    handler.onToken(token);
-                });
-            }
-
-            @Override
-            public void onComplete() {
-                SwingUtilities.invokeLater(() -> {
-                    handler.onComplete();
-                });
-            }
-
-            @Override
-            public void onError(Exception e) {
-                SwingUtilities.invokeLater(() -> {
-                    handler.onError(e);
-                });
-            }
-        });
-        */
+        List<Map<String, String>> messages = new ArrayList<>();
+        messages.add(createMessage("system", "You are a helpful assistant."));
+        messages.add(createMessage("user", userMessage));
 
 
+        String requestBody = buildRequestBody("llama3.2", messages, true);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:11434/api/chat"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
 
-            List<Map<String, String>> messages = new ArrayList<>();
-            messages.add(createMessage("system", "You are a helpful assistant."));
-            messages.add(createMessage("user", userMessage));
+        StringBuilder fullResponse = new StringBuilder();
+        System.out.println("Starting to receive streaming response from Ollama...\n");
 
-
-            String requestBody = buildRequestBody("llama3.2", messages, true);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:11434/api/chat"))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                    .build();
-
-            StringBuilder fullResponse = new StringBuilder();
-            System.out.println("Starting to receive streaming response from Ollama...\n");
-
-            // Use the BodyHandlers.ofLines() to process the response line by line
+        // Use the BodyHandlers.ofLines() to process the response line by line
         executorService.submit(() -> {
             try {
                 HttpResponse<Stream<String>> response = client.send(
@@ -299,7 +267,9 @@ public class ChatPanel extends JPanel {
     // Interface for handling streaming responses
     public interface StreamingResponseHandler {
         void onToken(String token);
+
         void onComplete();
+
         void onError(Exception e);
     }
 
