@@ -25,7 +25,7 @@ public class ToolRunner {
 
     public static void runTool(Project project, String command, ConsoleView consoleView) {
 
-        String updatedCommand = command + " -e test -s faa080af-c1d8-40ad-9cce-e1a450ca5b57";
+        String updatedCommand = command;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 // Create command line
@@ -46,7 +46,6 @@ public class ToolRunner {
                 // Flag to track if we've seen the confirmation prompt
                 AtomicBoolean confirmationSent = new AtomicBoolean(false);
 
-
                 processHandler.addProcessListener(new ProcessAdapter() {
 
                     private StringBuilder outputBuffer = new StringBuilder();
@@ -55,7 +54,7 @@ public class ToolRunner {
                     public void onTextAvailable(@NotNull ProcessEvent event, @NotNull Key outputType) {
                         String text = event.getText();
                         if (outputType == ProcessOutputTypes.STDOUT) {
-                            consoleView.print(text, ConsoleViewContentType.NORMAL_OUTPUT);
+//                            consoleView.print(text, ConsoleViewContentType.NORMAL_OUTPUT);
 
                             // Add to buffer for confirmation detection
                             outputBuffer.append(text);
@@ -78,6 +77,22 @@ public class ToolRunner {
 
                                     // Reset buffer after handling
                                     outputBuffer = new StringBuilder();
+                                } catch (IOException e) {
+                                    LOG.error("Error sending automatic confirmation: " + e.getMessage(), e);
+                                    consoleView.print("Error sending automatic confirmation: " +
+                                                    e.getMessage() + "\n",
+                                            ConsoleViewContentType.ERROR_OUTPUT);
+                                }
+                            } else if(!confirmationSent.get()
+                                    && outputBuffer.toString().contains("host your app on Azure using Azure Container Apps")) {
+
+                                // Send confirmation input
+                                try {
+                                    sendInput(processHandler, "Confirm and continue initializing my app\n");
+                                    // Reset buffer after handling
+                                    outputBuffer = new StringBuilder();
+                                    // Set flag to avoid sending multiple times
+                                    confirmationSent.set(true);
                                 } catch (IOException e) {
                                     LOG.error("Error sending automatic confirmation: " + e.getMessage(), e);
                                     consoleView.print("Error sending automatic confirmation: " +

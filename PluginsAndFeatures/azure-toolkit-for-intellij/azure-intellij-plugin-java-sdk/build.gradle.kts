@@ -1,6 +1,8 @@
 dependencies {
     implementation(project(":azure-intellij-plugin-lib"))
     implementation(project(":azure-intellij-plugin-lib-java"))
+    implementation("org.commonmark:commonmark:0.21.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.21.0")
     implementation("com.microsoft.azure:azure-toolkit-common-lib")
     implementation("com.microsoft.azure:azure-toolkit-ide-common-lib")
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")

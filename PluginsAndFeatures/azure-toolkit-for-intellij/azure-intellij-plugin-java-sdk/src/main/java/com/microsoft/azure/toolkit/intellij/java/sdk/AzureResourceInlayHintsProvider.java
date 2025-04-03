@@ -58,7 +58,7 @@ public class AzureResourceInlayHintsProvider implements InlayHintsProvider<NoSet
                         int endOffset = psiElement.getTextRange().getEndOffset();
                         InlayPresentation iconPresentation = new PresentationFactory(editor).icon(ICON);
                         InlayPresentationFactory.ClickListener azureClickListener = (mouseEvent, point) -> {
-                            AzureResourceListWindow.showPopup(psiElement.getText(), mouseEvent.getComponent());
+                            AzureResourceListWindow.showPopup(psiElement.getProject(), psiElement.getText(), mouseEvent.getComponent());
                         };
                         OnClickPresentation azureClickPresentation = new OnClickPresentation(iconPresentation, azureClickListener);
                         WithCursorOnHoverPresentation presentation = new WithCursorOnHoverPresentation(azureClickPresentation, HAND_CURSOR, editor);

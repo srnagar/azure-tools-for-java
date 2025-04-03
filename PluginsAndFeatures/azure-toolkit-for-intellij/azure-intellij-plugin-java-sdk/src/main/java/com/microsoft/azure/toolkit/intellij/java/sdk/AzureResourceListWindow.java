@@ -1,9 +1,19 @@
 package com.microsoft.azure.toolkit.intellij.java.sdk;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.ide.BrowserUtil;
+import com.intellij.openapi.application.Application;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.popup.IconButton;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.vfs.VfsUtil;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBScrollPane;
+import com.intellij.ui.components.JBTextArea;
+import com.intellij.util.ui.JBFont;
 import com.microsoft.azure.toolkit.intellij.java.sdk.azd.ToolItem;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.resource.AzureResources;
@@ -15,6 +25,9 @@ import org.jdesktop.swingx.renderer.CellContext;
 import org.jdesktop.swingx.renderer.DefaultTableRenderer;
 import org.jdesktop.swingx.renderer.HyperlinkProvider;
 import org.jdesktop.swingx.renderer.JXRendererHyperlink;
+import org.jetbrains.plugins.terminal.ShellTerminalWidget;
+import org.jetbrains.plugins.terminal.TerminalToolWindowManager;
+import com.intellij.openapi.ui.Messages;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -23,8 +36,13 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Vector;
+import java.util.regex.Matcher;
+
+import static com.sun.java.accessibility.util.AWTEventMonitor.addActionListener;
 
 public class AzureResourceListWindow {
     private static final Cursor HAND_CURSOR = new Cursor(Cursor.HAND_CURSOR);
@@ -32,15 +50,43 @@ public class AzureResourceListWindow {
 
     private static final Vector<String> COLUMNS = new Vector<>(Arrays.asList("Resource name", "Resource Type", "Resource Group", "Portal"));
 
-    public static void showPopup(String title, Component parent) {
+    private static final String STORAGE_ACCOUNT_BICEP = """
+            resource newStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
+              name: 'mystorageaccount${uniqueString(resourceGroup().id)}'
+              location: resourceGroup().location
+              kind: 'StorageV2'
+              sku: {
+                name: 'Standard_LRS'
+              }
+              properties: {
+                accessTier: 'Hot'
+                supportsHttpsTrafficOnly: true
+                minimumTlsVersion: 'TLS1_2'
+              }
+            }
+            
+            resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = {
+              name: '${newStorageAccount.name}/default/mycontainer'
+              properties: {
+                publicAccess: 'None'  // 'None', 'Blob', or 'Container'
+                metadata: {
+                  purpose: 'documents'
+                }
+              }
+            }""";
+
+    public static void showPopup(Project project, String title, Component parent) {
         // Sample list of text items
         final Vector<Vector<String>> items = new Vector<>();
+        // Main panel combining table and input area
+        JPanel mainPanel = new JPanel(new BorderLayout());
+
 
         AzureResources az = Azure.az(AzureResources.class);
         String namespaceType;
         if (title.contains("Configuration")) {
             namespaceType = "AppConfiguration";
-        } else if (title.contains("Storage")) {
+        } else if (title.contains("Storage") || title.contains("Blob") || title.contains("Container")) {
             namespaceType = "Storage";
         } else if (title.contains("OpenAI")) {
             namespaceType = "CognitiveService";
@@ -72,6 +118,8 @@ public class AzureResourceListWindow {
                     items.add(columns);
                 });
 
+
+        // JTable/JBTable consumes all events and making individual cell clickable is easier with JXTable
         // Create table model
         DefaultTableModel tableModel = new DefaultTableModel(items, COLUMNS) {
             @Override
@@ -79,11 +127,6 @@ public class AzureResourceListWindow {
                 return false; // Make table non-editable
             }
         };
-
-        // JTable/JBTable consumes all events and making individual cell clickable is easier with JXTable
-        JXTable table = new JXTable(tableModel);
-        table.setPreferredScrollableViewportSize(new Dimension(500, 350));
-        table.setFillsViewportHeight(true);
 
         AbstractHyperlinkAction<Object> simpleAction = new AbstractHyperlinkAction<Object>(null) {
             public void actionPerformed(ActionEvent e) {
@@ -95,6 +138,11 @@ public class AzureResourceListWindow {
                 }
             }
         };
+
+        JXTable table = new JXTable(tableModel);
+        table.setPreferredScrollableViewportSize(new Dimension(1000, 800));
+        table.setFillsViewportHeight(true);
+
         HyperlinkTextProvider hyperlinkProvider = new HyperlinkTextProvider(simpleAction);
         TableCellRenderer renderer = new DefaultTableRenderer(hyperlinkProvider);
 
@@ -104,45 +152,6 @@ public class AzureResourceListWindow {
         // Create a scroll pane for the table
         JScrollPane scrollPane = new JBScrollPane(table);
 
-        // Create text field and send button
-        JTextField textField = new JTextField();
-        JButton sendButton = new JButton("Run");
-
-        // Send button action
-        sendButton.addActionListener((ActionEvent e) -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow != -1) {
-                String selectedText = table.getValueAt(selectedRow, 0) + ", " +
-                        table.getValueAt(selectedRow, 1) + ", " +
-                        table.getValueAt(selectedRow, 2);
-                String enteredText = textField.getText();
-                System.out.println("Selected: " + selectedText + ", Message: " + enteredText);
-            }
-        });
-
-        // Add table selection listener
-        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) {
-                    int selectedRow = table.getSelectedRow();
-                    if (selectedRow >= 0) {
-                        textField.setText("azd add " + (String) tableModel.getValueAt(selectedRow, 0));
-                    }
-                }
-            }
-        });
-
-        // Panel for input field and button
-        JPanel inputPanel = new JPanel(new BorderLayout());
-        inputPanel.add(textField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
-
-        // Main panel combining table and input area
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-        mainPanel.add(inputPanel, BorderLayout.SOUTH);
-
         // Create and show popup
         JBPopup popup = JBPopupFactory.getInstance()
                 .createComponentPopupBuilder(mainPanel, table)
@@ -150,10 +159,148 @@ public class AzureResourceListWindow {
                 .setMovable(true)
                 .setResizable(true)
                 .setRequestFocus(true)
+                .setCancelOnClickOutside(false)
+                .setCancelOnWindowDeactivation(false)
+                .setCancelButton(new IconButton("Close", AllIcons.Actions.Close, AllIcons.Actions.CloseHovered))
                 .createPopup();
 
-        popup.showInCenterOf(parent);
+        // Create text field and send button
+        JPanel inputPanel = new JPanel(new BorderLayout());
+        if (isAzdInitialized(project)) {
+            JBTextArea jbTextArea = new JBTextArea("This project is initialized with azd. Add an existing resource or create new resource.");
+            jbTextArea.setEditable(false);
+            jbTextArea.setLineWrap(true);
+            jbTextArea.setWrapStyleWord(true);
+            jbTextArea.setCaretPosition(0);
+            jbTextArea.setOpaque(false);
+            jbTextArea.setPreferredSize(new Dimension(100, 50));
+            jbTextArea.setFont(JBFont.h2());
+            jbTextArea.setAlignmentX(Component.RIGHT_ALIGNMENT);
+            jbTextArea.setAlignmentY(Component.BOTTOM_ALIGNMENT);
 
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            JPanel addSelectedPanel = new JPanel(new BorderLayout());
+            JPanel addNewPanel = new JPanel(new BorderLayout());
+
+            JButton addSelected = new JButton("Add Selected");
+            addSelected.setEnabled(false);
+
+            JButton addNew = new JButton("Add New");
+
+            addNewPanel.add(addNew, BorderLayout.CENTER);
+            addSelectedPanel.add(addSelected, BorderLayout.CENTER);
+
+            buttonPanel.add(addSelectedPanel, BorderLayout.EAST);
+            buttonPanel.add(addNewPanel, BorderLayout.WEST);
+
+            inputPanel.add(jbTextArea, BorderLayout.CENTER);
+            inputPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+            addNew.addActionListener((ActionEvent e) -> {
+                ApplicationManager.getApplication().runWriteAction(() -> {
+                    try {
+                        VirtualFile child = project.getBaseDir().findChild("infra");
+                        VirtualFile child1 = child.findChild("main.bicep");
+                        String s = new String(child1.contentsToByteArray());
+                        if (!child1.isWritable()) {
+                            child1.setWritable(true);
+                        }
+                        VfsUtil.saveText(child1, s.replaceFirst("output",  Matcher.quoteReplacement(STORAGE_ACCOUNT_BICEP) + "\n\noutput"));
+                        ApplicationManager.getApplication().invokeLater(() -> {
+                            popup.cancel();
+                            Messages.showInfoMessage("Resource added successfully!", "Success");
+                            FileEditorManager.getInstance(project).openFile(child1, true);
+                        });
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
+            });
+
+            addSelected.addActionListener((ActionEvent e) -> {
+                ApplicationManager.getApplication().runWriteAction(() -> {
+                    try {
+                        VirtualFile child = project.getBaseDir().findChild("infra");
+                        VirtualFile child1 = child.findChild("main.bicep");
+                        String s = new String(child1.contentsToByteArray());
+                        if (!child1.isWritable()) {
+                            child1.setWritable(true);
+                        }
+                        String existingResource = "resource storage 'Microsoft.Storage/storageAccounts@2023-04-01' existing = {\n" +
+                                "  name: '" + table.getStringAt(table.getSelectedRow(), 0) + "'\n" +
+                                "  scope: resourceGroup(" + table.getStringAt(table.getSelectedRow(), 2)+ ")\n" +
+                                "}";
+                        VfsUtil.saveText(child1, s.replaceFirst("output", existingResource + "\n\noutput"));
+
+                        ApplicationManager.getApplication().invokeLater(() -> {
+                            popup.cancel();
+                            Messages.showInfoMessage("Resource added successfully!", "Success");
+                            FileEditorManager.getInstance(project).openFile(child1, true);
+                        });
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
+            });
+
+            // Add table selection listener
+            table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent e) {
+                    if (!e.getValueIsAdjusting()) {
+                        int selectedRow = table.getSelectedRow();
+                        if (selectedRow >= 0) {
+                            addSelected.setEnabled(true);
+                        }
+                    }
+                }
+            });
+        } else {
+            JBTextArea jbTextArea = new JBTextArea("This project is NOT initialized with azd.");
+            jbTextArea.setEditable(false);
+            jbTextArea.setLineWrap(true);
+            jbTextArea.setWrapStyleWord(true);
+            jbTextArea.setCaretPosition(0);
+            jbTextArea.setOpaque(false);
+            jbTextArea.setPreferredSize(new Dimension(100, 100));
+            jbTextArea.setFont(JBFont.h2());
+            jbTextArea.setAlignmentX(Component.CENTER_ALIGNMENT);
+            jbTextArea.setAlignmentY(Component.CENTER_ALIGNMENT);
+
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            JPanel addSelectedPanel = new JPanel(new BorderLayout());
+            JPanel addNewPanel = new JPanel(new BorderLayout());
+
+            JButton initialize = new JButton("Initialize with azd ");
+
+            addNewPanel.add(initialize, BorderLayout.CENTER);
+            buttonPanel.add(addNewPanel, BorderLayout.WEST);
+
+            inputPanel.add(jbTextArea, BorderLayout.CENTER);
+            inputPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+            initialize.addActionListener((ActionEvent e) -> {
+                try {
+                    ShellTerminalWidget myAzdConsole = TerminalToolWindowManager.getInstance(project).createLocalShellWidget(project.getBasePath(), "my azd console");
+                    mainPanel.add(myAzdConsole, BorderLayout.SOUTH);
+                    myAzdConsole.executeCommand("azd init --from-code");
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+        }
+
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(inputPanel, BorderLayout.SOUTH);
+        popup.showInCenterOf(parent);
+    }
+
+    private static boolean isAzdInitialized(Project project) {
+        VirtualFile child = project.getBaseDir().findChild("azure.yaml");
+        if (child != null) {
+            return true;
+        }
+        return false;
     }
 
     private static class HyperlinkTextProvider extends HyperlinkProvider {

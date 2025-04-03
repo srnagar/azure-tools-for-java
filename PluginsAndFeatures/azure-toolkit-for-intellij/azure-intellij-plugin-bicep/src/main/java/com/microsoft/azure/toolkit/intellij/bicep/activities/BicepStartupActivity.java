@@ -32,6 +32,7 @@ import org.wso2.lsp4intellij.client.languageserver.serverdefinition.ProcessBuild
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;

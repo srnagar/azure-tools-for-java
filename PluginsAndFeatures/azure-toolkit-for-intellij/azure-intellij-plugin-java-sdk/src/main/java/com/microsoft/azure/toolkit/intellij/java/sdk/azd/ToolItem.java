@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ToolItem {
 
@@ -87,6 +88,16 @@ public class ToolItem {
     @Override
     public String toString() {
         return name;
+    }
+
+    public static List<ToolItem> createDataFromTemplatesJson() {
+        List<AzdTemplate> azdTemplates = AzdToolWindowFactory
+                .readFromGitHub("https://raw.githubusercontent.com/Azure/awesome-azd/refs/heads/main/website/static/templates.json");
+
+        return azdTemplates.stream()
+                .filter(template -> template.getTags().contains("java"))
+                .map(template -> new ToolItem(template.getTitle(), template.getWebsite(), template.getDescription(), "azd init -t " + template.getSource()))
+                .collect(Collectors.toUnmodifiableList());
     }
 
     /**

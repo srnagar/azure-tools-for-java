@@ -4,15 +4,16 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.ui.JBColor;
-import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
+import com.intellij.ui.components.panels.RowGridLayout;
 import com.intellij.util.ui.JBUI;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
-import static java.awt.Font.DIALOG;
+import static java.awt.Font.SANS_SERIF;
+import static javax.swing.SwingConstants.CENTER;
 
 public class AzdToolWindowContent {
     // Command to get the data
@@ -188,33 +189,32 @@ public class AzdToolWindowContent {
         contentPanel = new JBPanel<>(new BorderLayout());
 
         JPanel itemsPanel = new JPanel();
-        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
+        itemsPanel.setLayout(new RowGridLayout(1, 0, JBUI.scale(2), CENTER));
         itemsPanel.setOpaque(false);
 
-        JButton showPopupButton = new IconOnlyButton(AllIcons.General.Vcs);
+        JButton showPopupButton = new IconOnlyButton(AllIcons.Vcs.Clone);
         showPopupButton.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
 
+        JButton initFromSource = new IconOnlyButton(AllIcons.Actions.Install);
+        initFromSource.addActionListener(e -> RunToolAction.showConsolePopup(project, toolWindow.getComponent(), "azd init --from-code -e test"));
+
         JButton provisionResources = new IconOnlyButton(AllIcons.Actions.Upload);
-        provisionResources.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
+        provisionResources.addActionListener(e -> RunToolAction.showConsolePopup(project, toolWindow.getComponent(), "azd provision --no-prompt"));
 
         JButton deployResources = new IconOnlyButton(AllIcons.Actions.Execute);
-        deployResources.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
+        deployResources.addActionListener(e -> RunToolAction.showConsolePopup(project, toolWindow.getComponent(), "azd deploy --no-prompt"));
 
         JButton provisionAndDeploy = new IconOnlyButton(AllIcons.Actions.RunAll);
-        provisionAndDeploy.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
+        provisionAndDeploy.addActionListener(e -> RunToolAction.showConsolePopup(project, toolWindow.getComponent(), "azd up --no-prompt"));
 
         addButtonWrapper(itemsPanel, showPopupButton, "Initialize From Templates");
+        addButtonWrapper(itemsPanel, initFromSource, "Initialize From Source");
         addButtonWrapper(itemsPanel, provisionResources, "Provision Azure Resources");
         addButtonWrapper(itemsPanel, deployResources, "Deploy to Azure");
         addButtonWrapper(itemsPanel, provisionAndDeploy, "Provision & Deploy to Azure");
 
-        JBLabel descriptionLabel = new JBLabel("Click to view available tools");
-        descriptionLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        descriptionLabel.setBorder(JBUI.Borders.empty(5, 0, 0, 0));
-
         JBPanel<JBPanel<?>> centerPanel = new JBPanel<>(new BorderLayout());
         centerPanel.add(itemsPanel, BorderLayout.CENTER);
-        centerPanel.add(descriptionLabel, BorderLayout.SOUTH);
 
         contentPanel.add(centerPanel, BorderLayout.CENTER);
     }
@@ -223,22 +223,23 @@ public class AzdToolWindowContent {
         JPanel itemPanel = new JPanel();
         itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
         itemPanel.setOpaque(false);
-        itemPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-//        JPanel buttonWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-//        buttonWrapper.setOpaque(false);
-//        buttonWrapper.add(button);
 
         // Create a label for the text
         JLabel textLabel = new JLabel(label);
         textLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        textLabel.setFont(JBUI.Fonts.create(DIALOG, 14));
+        textLabel.setFont(JBUI.Fonts.create(SANS_SERIF, 14));
 
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
         itemPanel.add(button);
         itemPanel.add(textLabel);
 
+        itemPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         panel.add(itemPanel);
-        panel.add(Box.createVerticalStrut(15)); // Small gap between icons
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
+//        JSeparator jSeparator = new JSeparator(SwingConstants.HORIZONTAL);
+//        panel.add(jSeparator);
+//        panel.add(Box.createVerticalStrut(5)); // Small gap between icons
     }
 
     public JPanel getContentPanel() {

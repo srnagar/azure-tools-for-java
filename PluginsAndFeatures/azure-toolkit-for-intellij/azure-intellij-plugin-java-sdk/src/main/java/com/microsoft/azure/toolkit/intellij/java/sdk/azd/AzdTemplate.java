@@ -1,0 +1,77 @@
+package com.microsoft.azure.toolkit.intellij.java.sdk.azd;
+
+import java.util.List;
+
+public class AzdTemplate {
+
+    private String title;
+    private String description;
+    private String preview;
+    private String website;
+    private String author;
+    private String source;
+    private List<String> tags;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public AzdTemplate setTitle(String title) {
+        this.title = title;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public AzdTemplate setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public String getPreview() {
+        return preview;
+    }
+
+    public AzdTemplate setPreview(String preview) {
+        this.preview = preview;
+        return this;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public AzdTemplate setWebsite(String website) {
+        this.website = website;
+        return this;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public AzdTemplate setAuthor(String author) {
+        this.author = author;
+        return this;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public AzdTemplate setSource(String source) {
+        this.source = source;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public AzdTemplate setTags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+}

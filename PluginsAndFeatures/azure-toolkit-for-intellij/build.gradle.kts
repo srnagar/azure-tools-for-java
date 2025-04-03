@@ -195,7 +195,7 @@ dependencies {
     implementation(project(":azure-intellij-plugin-redis"))
     implementation(project(":azure-intellij-plugin-redis-java"))
     implementation(project(":azure-intellij-plugin-samples"))
-    implementation(project(":azure-intellij-plugin-bicep"))
+//    implementation(project(":azure-intellij-plugin-bicep"))
     implementation(project(":azure-intellij-plugin-eventhubs"))
     implementation(project(":azure-intellij-plugin-servicebus"))
     implementation(project(":azure-intellij-plugin-keyvault"))

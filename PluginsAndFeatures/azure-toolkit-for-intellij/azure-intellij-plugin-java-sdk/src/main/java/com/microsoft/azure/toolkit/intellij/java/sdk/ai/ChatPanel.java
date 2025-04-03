@@ -1,10 +1,13 @@
 package com.microsoft.azure.toolkit.intellij.java.sdk.ai;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
+import org.commonmark.renderer.html.HtmlRenderer;
 
 import javax.swing.*;
+import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -80,11 +83,15 @@ public class ChatPanel extends JPanel {
         add(inputPanel, BorderLayout.SOUTH);
 
         // Welcome message
-        chatHistory.append("Chat initialized. Type a message and press Send or Ctrl+Enter.\n\n");
+        renderToChatHistory("Chat initialized. Type a message and press Send or Ctrl+Enter.\n\n");
 
         client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
+    }
+
+    private void renderToChatHistory(String text) {
+        chatHistory.append(text);
     }
 
     private void sendMessage() {
@@ -93,7 +100,7 @@ public class ChatPanel extends JPanel {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
             String timestamp = sdf.format(new Date());
 
-            chatHistory.append("[" + timestamp + "] You: " + message + "\n\n");
+            renderToChatHistory("[" + timestamp + "] You: " + message + "\n\n");
 
             // Clear input field
             inputField.setText("");
@@ -115,7 +122,7 @@ public class ChatPanel extends JPanel {
         String timestamp = sdf.format(new Date());
 
         // Add initial response indicator
-        chatHistory.append("[" + timestamp + "] Assistant: ");
+        renderToChatHistory("[" + timestamp + "] Assistant: ");
 
         // This would be where you connect to your actual chat service
         // For demonstration, we'll simulate streaming with a sample response
@@ -129,7 +136,7 @@ public class ChatPanel extends JPanel {
                 for (char c : fullResponse.toCharArray()) {
                     final char currentChar = c;
                     SwingUtilities.invokeLater(() -> {
-                        chatHistory.append(String.valueOf(currentChar));
+                        renderToChatHistory(String.valueOf(currentChar));
                         scrollToBottom();
                     });
 
@@ -139,7 +146,7 @@ public class ChatPanel extends JPanel {
 
                 // Add a line break at the end
                 SwingUtilities.invokeLater(() -> {
-                    chatHistory.append("\n\n");
+                    renderToChatHistory("\n\n");
                     scrollToBottom();
                     setInputEnabled(true);
                     isResponding = false;
@@ -147,7 +154,7 @@ public class ChatPanel extends JPanel {
 
             } catch (InterruptedException e) {
                 SwingUtilities.invokeLater(() -> {
-                    chatHistory.append("\n\n[Error: Response interrupted]\n\n");
+                    renderToChatHistory("\n\n[Error: Response interrupted]\n\n");
                     scrollToBottom();
                     setInputEnabled(true);
                     isResponding = false;
@@ -194,7 +201,7 @@ public class ChatPanel extends JPanel {
                 response.body().forEach(line -> {
                     if (line.contains("\"done\":true")) {
                         SwingUtilities.invokeLater(() -> {
-                            chatHistory.append("\n\n");
+                            renderToChatHistory("\n\n");
                             scrollToBottom();
                             setInputEnabled(true);
                             isResponding = false;
@@ -205,7 +212,7 @@ public class ChatPanel extends JPanel {
                     if (line.contains("\"content\":")) {
                         String content = extractContent(line);
                         SwingUtilities.invokeLater(() -> {
-                            chatHistory.append(content);
+                            renderToChatHistory(content);
                             scrollToBottom();
                         });
                         fullResponse.append(content);
