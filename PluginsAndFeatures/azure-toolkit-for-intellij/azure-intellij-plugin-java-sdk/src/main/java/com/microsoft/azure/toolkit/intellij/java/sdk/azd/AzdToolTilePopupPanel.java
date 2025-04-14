@@ -17,6 +17,7 @@ import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.util.ui.JBUI;
+import com.microsoft.applicationinsights.core.dependencies.apachecommons.lang3.RandomUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -264,7 +265,7 @@ public class AzdToolTilePopupPanel extends JPanel {
         consoleView.print("> " + command + "\n", ConsoleViewContentType.USER_INPUT);
 
         // Execute command and show result
-        ToolRunner.runTool(project, command  + " -e test -s faa080af-c1d8-40ad-9cce-e1a450ca5b57" , consoleView);
+        ToolRunner.runTool(project, command  + " -s faa080af-c1d8-40ad-9cce-e1a450ca5b57 -e test" + RandomUtils.nextInt() , consoleView);
     }
 
     public void setPopup(JBPopup popup) {

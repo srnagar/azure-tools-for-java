@@ -7,6 +7,7 @@ import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.components.panels.RowGridLayout;
 import com.intellij.util.ui.JBUI;
+import com.microsoft.applicationinsights.core.dependencies.apachecommons.lang3.RandomUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -196,7 +197,7 @@ public class AzdToolWindowContent {
         showPopupButton.addActionListener(e -> RunToolAction.showToolPopup(project, toolWindow.getComponent()));
 
         JButton initFromSource = new IconOnlyButton(AllIcons.Actions.Install);
-        initFromSource.addActionListener(e -> RunToolAction.showConsolePopup(project, toolWindow.getComponent(), "azd init --from-code -e test"));
+        initFromSource.addActionListener(e -> RunToolAction.showConsolePopup(project, toolWindow.getComponent(), "azd init --from-code -e test" + RandomUtils.nextInt()));
 
         JButton provisionResources = new IconOnlyButton(AllIcons.Actions.Upload);
         provisionResources.addActionListener(e -> RunToolAction.showConsolePopup(project, toolWindow.getComponent(), "azd provision --no-prompt"));

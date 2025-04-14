@@ -49,7 +49,6 @@ public class RunToolAction extends AnAction {
                 .setCancelOnClickOutside(false)
                 .setCancelOnWindowDeactivation(false)
                 .setCancelButton(new IconButton("Close", AllIcons.Actions.Close, AllIcons.Actions.CloseHovered))
-                .setCancelCallback(() -> new CloseConfirmationDialog(project).showAndGet())
                 .createPopup();
 
         popupPanel.setPopup(popup);

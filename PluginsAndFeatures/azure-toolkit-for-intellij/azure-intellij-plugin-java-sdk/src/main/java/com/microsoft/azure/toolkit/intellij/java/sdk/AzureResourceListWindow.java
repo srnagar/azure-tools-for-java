@@ -14,6 +14,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.util.ui.JBFont;
+import com.microsoft.applicationinsights.core.dependencies.apachecommons.lang3.RandomUtils;
 import com.microsoft.azure.toolkit.intellij.java.sdk.azd.ToolItem;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.resource.AzureResources;
@@ -28,6 +29,7 @@ import org.jdesktop.swingx.renderer.JXRendererHyperlink;
 import org.jetbrains.plugins.terminal.ShellTerminalWidget;
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager;
 import com.intellij.openapi.ui.Messages;
+import org.reflections.vfs.Vfs;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -51,29 +53,47 @@ public class AzureResourceListWindow {
     private static final Vector<String> COLUMNS = new Vector<>(Arrays.asList("Resource name", "Resource Type", "Resource Group", "Portal"));
 
     private static final String STORAGE_ACCOUNT_BICEP = """
-            resource newStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
-              name: 'mystorageaccount${uniqueString(resourceGroup().id)}'
-              location: resourceGroup().location
-              kind: 'StorageV2'
-              sku: {
-                name: 'Standard_LRS'
-              }
-              properties: {
-                accessTier: 'Hot'
-                supportsHttpsTrafficOnly: true
-                minimumTlsVersion: 'TLS1_2'
-              }
-            }
+         param location string = resourceGroup().location
             
-            resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = {
-              name: '${newStorageAccount.name}/default/mycontainer'
-              properties: {
-                publicAccess: 'None'  // 'None', 'Blob', or 'Container'
-                metadata: {
-                  purpose: 'documents'
-                }
-              }
-            }""";
+         resource sa 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+           name: 'test'
+           location: location
+           sku: {
+             name: 'Standard_LRS'
+           }
+           kind: 'StorageV2'
+           properties: {
+             accessTier: 'Hot'
+             allowSharedKeyAccess: false
+           }
+         }
+        
+         resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
+           parent: sa
+           name: 'default'
+         }
+        
+         resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+           parent: blobServices
+           name: 'testcontainer'
+         }""";
+
+    private static final String STORAGE_MODULE = """
+        module storage 'modules/storage/storage.bicep' = {
+            name: '${deployment().name}--storage'
+            scope: resourceGroup(rg.name)
+            params: {
+                location: location
+            }
+        }
+        """;
+
+    private static final String EXISTING_STORAGE_MODULE = """
+        module storage 'modules/storage/storage.bicep' = {
+            name: '${deployment().name}--storage'
+            scope: resourceGroup(rg.name)
+        }
+        """;
 
     public static void showPopup(Project project, String title, Component parent) {
         // Sample list of text items
@@ -199,17 +219,23 @@ public class AzureResourceListWindow {
             addNew.addActionListener((ActionEvent e) -> {
                 ApplicationManager.getApplication().runWriteAction(() -> {
                     try {
-                        VirtualFile child = project.getBaseDir().findChild("infra");
-                        VirtualFile child1 = child.findChild("main.bicep");
-                        String s = new String(child1.contentsToByteArray());
-                        if (!child1.isWritable()) {
-                            child1.setWritable(true);
+                        VirtualFile infra = project.getBaseDir().findChild("infra");
+                        VirtualFile mainBicep = infra.findChild("main.bicep");
+                        VirtualFile modules = infra.findChild("modules");
+                        if (modules != null) {
+                            VirtualFile storageModule = modules.createChildDirectory(project, "storage");
+                            VirtualFile storageBicep = storageModule.findOrCreateChildData(project, "storage.bicep");
+                            VfsUtil.saveText(storageBicep, STORAGE_ACCOUNT_BICEP.replace("test", "test" + RandomUtils.nextInt()));
                         }
-                        VfsUtil.saveText(child1, s.replaceFirst("output",  Matcher.quoteReplacement(STORAGE_ACCOUNT_BICEP) + "\n\noutput"));
+                        String s = new String(mainBicep.contentsToByteArray());
+                        if (!mainBicep.isWritable()) {
+                            mainBicep.setWritable(true);
+                        }
+                        VfsUtil.saveText(mainBicep, s.replaceFirst("output",  Matcher.quoteReplacement(STORAGE_MODULE) + "\n\noutput"));
                         ApplicationManager.getApplication().invokeLater(() -> {
                             popup.cancel();
                             Messages.showInfoMessage("Resource added successfully!", "Success");
-                            FileEditorManager.getInstance(project).openFile(child1, true);
+                            FileEditorManager.getInstance(project).openFile(mainBicep, true);
                         });
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
@@ -220,22 +246,33 @@ public class AzureResourceListWindow {
             addSelected.addActionListener((ActionEvent e) -> {
                 ApplicationManager.getApplication().runWriteAction(() -> {
                     try {
-                        VirtualFile child = project.getBaseDir().findChild("infra");
-                        VirtualFile child1 = child.findChild("main.bicep");
-                        String s = new String(child1.contentsToByteArray());
-                        if (!child1.isWritable()) {
-                            child1.setWritable(true);
-                        }
+                        VirtualFile infra = project.getBaseDir().findChild("infra");
+                        VirtualFile mainBicep = infra.findChild("main.bicep");
+
+                        VirtualFile modules = infra.findChild("modules");
+
                         String existingResource = "resource storage 'Microsoft.Storage/storageAccounts@2023-04-01' existing = {\n" +
                                 "  name: '" + table.getStringAt(table.getSelectedRow(), 0) + "'\n" +
-                                "  scope: resourceGroup(" + table.getStringAt(table.getSelectedRow(), 2)+ ")\n" +
                                 "}";
-                        VfsUtil.saveText(child1, s.replaceFirst("output", existingResource + "\n\noutput"));
+
+                        if (modules != null) {
+                            VirtualFile storageModule = modules.createChildDirectory(project, "storage");
+                            VirtualFile storageBicep = storageModule.findOrCreateChildData(project, "storage.bicep");
+                            VfsUtil.saveText(storageBicep, existingResource);
+                        }
+
+                        String s = new String(mainBicep.contentsToByteArray());
+                        if (!mainBicep.isWritable()) {
+                            mainBicep.setWritable(true);
+                        }
+
+                        VfsUtil.saveText(mainBicep, s.replaceFirst("output", Matcher.quoteReplacement(EXISTING_STORAGE_MODULE)
+                                .replace("rg.name", "'" + table.getStringAt(table.getSelectedRow(), 2)+ "'") + "\n\noutput"));
 
                         ApplicationManager.getApplication().invokeLater(() -> {
                             popup.cancel();
                             Messages.showInfoMessage("Resource added successfully!", "Success");
-                            FileEditorManager.getInstance(project).openFile(child1, true);
+                            FileEditorManager.getInstance(project).openFile(mainBicep, true);
                         });
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
