@@ -25,7 +25,9 @@ public class AzdToolWindowFactory implements ToolWindowFactory {
     public static List<AzdTemplate> readFromGitHub(String githubUrl) {
         try {
             // Create ObjectMapper instance
-            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectMapper objectMapper = new ObjectMapper()
+                    .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                    .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             // Read JSON from URL directly into the Repository model
             return objectMapper.readValue(new URL(githubUrl), new TypeReference<List<AzdTemplate>>() {});

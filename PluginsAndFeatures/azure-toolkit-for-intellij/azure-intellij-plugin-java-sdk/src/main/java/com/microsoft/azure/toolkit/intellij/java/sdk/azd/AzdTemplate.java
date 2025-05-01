@@ -7,10 +7,11 @@ public class AzdTemplate {
     private String title;
     private String description;
     private String preview;
-    private String website;
+    private String authorUrl;
     private String author;
     private String source;
     private List<String> tags;
+    private List<String> language;
 
     public String getTitle() {
         return title;
@@ -39,12 +40,12 @@ public class AzdTemplate {
         return this;
     }
 
-    public String getWebsite() {
-        return website;
+    public String getAuthorUrl() {
+        return authorUrl;
     }
 
-    public AzdTemplate setWebsite(String website) {
-        this.website = website;
+    public AzdTemplate setAuthorUrl(String authorUrl) {
+        this.authorUrl = authorUrl;
         return this;
     }
 
@@ -72,6 +73,15 @@ public class AzdTemplate {
 
     public AzdTemplate setTags(List<String> tags) {
         this.tags = tags;
+        return this;
+    }
+
+    public List<String> getLanguage() {
+        return language;
+    }
+
+    public AzdTemplate setLanguage(List<String> language) {
+        this.language = language;
         return this;
     }
 }

@@ -30,6 +30,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +93,7 @@ public class AzdToolTilePopupPanel extends JPanel {
         add(consolePanel, BorderLayout.SOUTH);
 
         // Load data
-        loadData(tilesPanel, List.of("java"));
+        loadData(tilesPanel, Collections.emptyList());
     }
 
     private void addFilters(JPanel filterTagsPanel, JPanel tilesPanel, List<String> allTags) {
@@ -151,9 +152,23 @@ public class AzdToolTilePopupPanel extends JPanel {
                 indicator.setText("Executing command to load tool data...");
 
 //                final List<ToolItem> items = ToolItem.createDataFromCommand(project, DATA_COMMAND);
-                final List<ToolItem> items = templates.stream()
-                        .filter(template -> template.getTags().containsAll(tags))
-                        .map(template -> new ToolItem(template.getTitle(), template.getWebsite(), template.getDescription(), "azd init -t " + template.getSource()))
+//                final List<ToolItem> items = templates.stream()
+//                        .filter(template -> template.getLanguages() != null && template.getLanguages().contains("java"))
+//                        .filter(template -> tags == null || tags.isEmpty() || template.getTags().containsAll(tags))
+//                        .map(template -> new ToolItem(template.getTitle(), template.getAuthorUrl(), template.getDescription(), "azd init -t " + template.getSource()))
+//                        .collect(Collectors.toUnmodifiableList());
+
+                List<AzdTemplate> javaTemplates = templates.stream()
+                        .filter(template -> template.getLanguage() != null && template.getLanguage().contains("java"))
+                        .collect(Collectors.toUnmodifiableList());
+
+                List<AzdTemplate> tagTemplates = javaTemplates.stream()
+                        .filter(template -> tags == null || tags.isEmpty() || template.getTags().containsAll(tags))
+                        .collect(Collectors.toUnmodifiableList());
+
+                List<ToolItem> items = tagTemplates
+                        .stream()
+                        .map(template -> new ToolItem(template.getTitle(), template.getAuthorUrl(), template.getDescription(), "azd init -t " + template.getSource()))
                         .collect(Collectors.toUnmodifiableList());
 
                 ApplicationManager.getApplication().invokeLater(() -> {
@@ -303,7 +318,7 @@ public class AzdToolTilePopupPanel extends JPanel {
         // Count occurrences
         Map<String, Integer> frequencyMap = new HashMap<>();
         List<String> tags = input.stream()
-                .filter(template -> template.getTags().contains("java"))
+                .filter(template -> template.getLanguage() != null && template.getLanguage().contains("java"))
                 .flatMap(template -> template.getTags().stream())
                 .collect(Collectors.toUnmodifiableList());
 

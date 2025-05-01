@@ -2,7 +2,6 @@ package com.microsoft.azure.toolkit.intellij.java.sdk;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.application.Application;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
@@ -15,7 +14,6 @@ import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.util.ui.JBFont;
 import com.microsoft.applicationinsights.core.dependencies.apachecommons.lang3.RandomUtils;
-import com.microsoft.azure.toolkit.intellij.java.sdk.azd.ToolItem;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.resource.AzureResources;
 import com.microsoft.azure.toolkit.lib.resource.ResourcesServiceSubscription;
@@ -29,7 +27,6 @@ import org.jdesktop.swingx.renderer.JXRendererHyperlink;
 import org.jetbrains.plugins.terminal.ShellTerminalWidget;
 import org.jetbrains.plugins.terminal.TerminalToolWindowManager;
 import com.intellij.openapi.ui.Messages;
-import org.reflections.vfs.Vfs;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -39,12 +36,9 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Vector;
 import java.util.regex.Matcher;
-
-import static com.sun.java.accessibility.util.AWTEventMonitor.addActionListener;
 
 public class AzureResourceListWindow {
     private static final Cursor HAND_CURSOR = new Cursor(Cursor.HAND_CURSOR);
@@ -76,7 +70,26 @@ public class AzureResourceListWindow {
          resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
            parent: blobServices
            name: 'testcontainer'
-         }""";
+         }
+         """;
+
+    private static final String OPENAI_ACCOUNT_BICEP = """
+        param location string = resourceGroup().location
+
+        resource openai 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+            name: 'test'
+            location: location
+            sku: {
+                name: 'S0'
+            }
+            kind: 'OpenAI'
+            properties: {
+                apiProperties: {
+                    apiType: 'OpenAI'
+                }
+            }
+        }
+        """;
 
     private static final String STORAGE_MODULE = """
         module storage 'modules/storage/storage.bicep' = {
@@ -87,10 +100,26 @@ public class AzureResourceListWindow {
             }
         }
         """;
+    private static final String OPENAI_MODULE = """
+        module openai 'modules/openai/openai.bicep' = {
+            name: '${deployment().name}--openai'
+            scope: resourceGroup(rg.name)
+            params: {
+                location: location
+            }
+        }
+        """;
 
     private static final String EXISTING_STORAGE_MODULE = """
         module storage 'modules/storage/storage.bicep' = {
             name: '${deployment().name}--storage'
+            scope: resourceGroup(rg.name)
+        }
+        """;
+
+    private static final String EXISTING_OPENAI_MODULE = """
+        module openai 'modules/openai/openai.bicep' = {
+            name: '${deployment().name}--openai'
             scope: resourceGroup(rg.name)
         }
         """;
@@ -218,68 +247,52 @@ public class AzureResourceListWindow {
 
             addNew.addActionListener((ActionEvent e) -> {
                 ApplicationManager.getApplication().runWriteAction(() -> {
-                    try {
-                        VirtualFile infra = project.getBaseDir().findChild("infra");
-                        VirtualFile mainBicep = infra.findChild("main.bicep");
-                        VirtualFile modules = infra.findChild("modules");
-                        if (modules != null) {
-                            VirtualFile storageModule = modules.createChildDirectory(project, "storage");
-                            VirtualFile storageBicep = storageModule.findOrCreateChildData(project, "storage.bicep");
-                            VfsUtil.saveText(storageBicep, STORAGE_ACCOUNT_BICEP.replace("test", "test" + RandomUtils.nextInt()));
-                        }
-                        String s = new String(mainBicep.contentsToByteArray());
-                        if (!mainBicep.isWritable()) {
-                            mainBicep.setWritable(true);
-                        }
-                        VfsUtil.saveText(mainBicep, s.replaceFirst("output",  Matcher.quoteReplacement(STORAGE_MODULE) + "\n\noutput"));
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            popup.cancel();
-                            Messages.showInfoMessage("Resource added successfully!", "Success");
-                            FileEditorManager.getInstance(project).openFile(mainBicep, true);
-                        });
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
+                    if (title.contains("Configuration")) {
+
+                    } else if (title.contains("Storage") || title.contains("Blob") || title.contains("Container")) {
+                        String mainBicepContent = STORAGE_MODULE;
+                        String serviceBicepContent = STORAGE_ACCOUNT_BICEP.replace("test", "test" + RandomUtils.nextInt());
+
+                        updateInfraWithNewResource(project, popup, "storage", mainBicepContent, serviceBicepContent);
+                    } else if (title.contains("OpenAI")) {
+                        String mainBicepContent = OPENAI_MODULE;
+                        String serviceBicepContent = OPENAI_ACCOUNT_BICEP.replace("test", "test" + RandomUtils.nextInt());
+                        updateInfraWithNewResource(project, popup, "openai", mainBicepContent, serviceBicepContent);
+                    } else if (title.contains("Search")) {
+                    } else if (title.contains("ServiceBus")) {
+                    } else if (title.contains("EventHub")) {
+                    } else {
                     }
                 });
             });
 
             addSelected.addActionListener((ActionEvent e) -> {
                 ApplicationManager.getApplication().runWriteAction(() -> {
-                    try {
-                        VirtualFile infra = project.getBaseDir().findChild("infra");
-                        VirtualFile mainBicep = infra.findChild("main.bicep");
+                    if (title.contains("Configuration")) {
 
-                        VirtualFile modules = infra.findChild("modules");
-
+                    } else if (title.contains("Storage") || title.contains("Blob") || title.contains("Container")) {
                         String existingResource = "resource storage 'Microsoft.Storage/storageAccounts@2023-04-01' existing = {\n" +
                                 "  name: '" + table.getStringAt(table.getSelectedRow(), 0) + "'\n" +
                                 "}";
 
-                        if (modules != null) {
-                            VirtualFile storageModule = modules.createChildDirectory(project, "storage");
-                            VirtualFile storageBicep = storageModule.findOrCreateChildData(project, "storage.bicep");
-                            VfsUtil.saveText(storageBicep, existingResource);
-                        }
+                        String referenceModule = EXISTING_STORAGE_MODULE.replace("rg.name", "'" + table.getStringAt(table.getSelectedRow(), 2) + "'");
+                        updateInfraWithSelectedResource(project, table, popup, existingResource, "storage", referenceModule);
+                    } else if (title.contains("OpenAI")) {
+                        String existingResource = "resource existingCognitiveService 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {\n" +
+                                "  name: '" + table.getStringAt(table.getSelectedRow(), 0) + "'\n" +
+                                "}";
 
-                        String s = new String(mainBicep.contentsToByteArray());
-                        if (!mainBicep.isWritable()) {
-                            mainBicep.setWritable(true);
-                        }
+                        String referenceModule = Matcher.quoteReplacement(EXISTING_OPENAI_MODULE)
+                                .replace("rg.name", "'" + table.getStringAt(table.getSelectedRow(), 2) + "'") + "\n\noutput";
 
-                        VfsUtil.saveText(mainBicep, s.replaceFirst("output", Matcher.quoteReplacement(EXISTING_STORAGE_MODULE)
-                                .replace("rg.name", "'" + table.getStringAt(table.getSelectedRow(), 2)+ "'") + "\n\noutput"));
-
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            popup.cancel();
-                            Messages.showInfoMessage("Resource added successfully!", "Success");
-                            FileEditorManager.getInstance(project).openFile(mainBicep, true);
-                        });
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
+                        updateInfraWithSelectedResource(project, table, popup, existingResource, "openai", referenceModule);
+                    } else if (title.contains("Search")) {
+                    } else if (title.contains("ServiceBus")) {
+                    } else if (title.contains("EventHub")) {
+                    } else {
                     }
                 });
             });
-
             // Add table selection listener
             table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
                 @Override
@@ -330,6 +343,77 @@ public class AzureResourceListWindow {
         mainPanel.add(scrollPane, BorderLayout.CENTER);
         mainPanel.add(inputPanel, BorderLayout.SOUTH);
         popup.showInCenterOf(parent);
+    }
+
+    private static void updateInfraWithSelectedResource(Project project, JXTable table, JBPopup popup,
+                                                        String existingResource, String serviceName, String referenceModule) {
+        try {
+            VirtualFile infra = project.getBaseDir().findChild("infra");
+            VirtualFile mainBicep = infra.findChild("main.bicep");
+            if (mainBicep == null) {
+                mainBicep = infra.findChild("bicep").findChild("main.bicep");
+            }
+            VirtualFile modules = infra.findChild("modules");
+            if (modules == null) {
+                modules = infra.findChild("bicep").findChild("modules");
+            }
+            if (modules != null) {
+                String s = new String(mainBicep.contentsToByteArray());
+                if (!mainBicep.isWritable()) {
+                    mainBicep.setWritable(true);
+                }
+                VfsUtil.saveText(mainBicep, s.replaceFirst("output", Matcher.quoteReplacement(referenceModule) + "\n\noutput"));
+
+                VirtualFile serviceDirectory = modules.createChildDirectory(project, serviceName);
+                VirtualFile serviceBicep = serviceDirectory.findOrCreateChildData(project, serviceName + ".bicep");
+                VfsUtil.saveText(serviceBicep, existingResource);
+
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    popup.cancel();
+                    Messages.showInfoMessage("Resource added successfully!", "Success");
+                    FileEditorManager.getInstance(project).openFile(serviceBicep, true);
+                });
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private static void updateInfraWithNewResource(Project project, JBPopup popup, String serviceName, String mainBicepContent, String serviceBicepContent) {
+        try {
+            VirtualFile infra = project.getBaseDir().findChild("infra");
+            VirtualFile mainBicep = infra.findChild("main.bicep");
+            if (mainBicep == null) {
+                mainBicep = infra.findChild("bicep").findChild("main.bicep");
+            }
+
+            VirtualFile modules = infra.findChild("modules");
+            if (modules == null) {
+                modules = infra.findChild("bicep").findChild("modules");
+            }
+            if (modules != null) {
+                String s = new String(mainBicep.contentsToByteArray());
+                if (!mainBicep.isWritable()) {
+                    mainBicep.setWritable(true);
+                }
+
+                VfsUtil.saveText(mainBicep, s.replaceFirst("output", Matcher.quoteReplacement(mainBicepContent) + "\n\noutput"));
+
+                VirtualFile serviceDirectory = modules.findChild(serviceName);
+                if(serviceDirectory == null) {
+                    serviceDirectory = modules.createChildDirectory(project, serviceName);
+                }
+                VirtualFile serviceBicep = serviceDirectory.findOrCreateChildData(project, serviceName + ".bicep");
+                VfsUtil.saveText(serviceBicep, serviceBicepContent);
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    popup.cancel();
+                    Messages.showInfoMessage("Resource added successfully!", "Success");
+                    FileEditorManager.getInstance(project).openFile(serviceBicep, true);
+                });
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private static boolean isAzdInitialized(Project project) {
