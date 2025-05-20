@@ -11,7 +11,7 @@ public class AzdTemplate {
     private String author;
     private String source;
     private List<String> tags;
-    private List<String> language;
+    private List<String> languages;
 
     public String getTitle() {
         return title;
@@ -76,12 +76,12 @@ public class AzdTemplate {
         return this;
     }
 
-    public List<String> getLanguage() {
-        return language;
+    public List<String> getLanguages() {
+        return languages;
     }
 
-    public AzdTemplate setLanguage(List<String> language) {
-        this.language = language;
+    public AzdTemplate setLanguages(List<String> languages) {
+        this.languages = languages;
         return this;
     }
 }

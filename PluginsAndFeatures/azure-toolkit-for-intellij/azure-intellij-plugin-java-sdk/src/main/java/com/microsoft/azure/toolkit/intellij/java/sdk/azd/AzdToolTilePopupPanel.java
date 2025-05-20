@@ -52,12 +52,6 @@ public class AzdToolTilePopupPanel extends JPanel {
         this.templates = AzdToolWindowFactory.readFromGitHub("https://raw.githubusercontent.com/Azure/awesome-azd/refs/heads/main/website/static/templates.json");
 
         List<String> allTags = topKTags(templates, 10);
-        templates.stream()
-                .filter(template -> template.getTags().contains("java"))
-                .flatMap(template -> template.getTags().stream())
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
 
         JPanel tilesPanel = new JPanel();
         JPanel filterTagsPanel = new JPanel(new GridLayout(0, 10, JBUI.scale(10), JBUI.scale(10)));
@@ -159,7 +153,7 @@ public class AzdToolTilePopupPanel extends JPanel {
 //                        .collect(Collectors.toUnmodifiableList());
 
                 List<AzdTemplate> javaTemplates = templates.stream()
-                        .filter(template -> template.getLanguage() != null && template.getLanguage().contains("java"))
+                        .filter(template -> template.getLanguages() != null && template.getLanguages().contains("java"))
                         .collect(Collectors.toUnmodifiableList());
 
                 List<AzdTemplate> tagTemplates = javaTemplates.stream()
@@ -318,7 +312,7 @@ public class AzdToolTilePopupPanel extends JPanel {
         // Count occurrences
         Map<String, Integer> frequencyMap = new HashMap<>();
         List<String> tags = input.stream()
-                .filter(template -> template.getLanguage() != null && template.getLanguage().contains("java"))
+                .filter(template -> template.getLanguages() != null && template.getLanguages().contains("java"))
                 .flatMap(template -> template.getTags().stream())
                 .collect(Collectors.toUnmodifiableList());
 
