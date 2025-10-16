@@ -46,6 +46,7 @@ public final class AzdNode extends Node<String> {
         this.project = project;
         withIcon(AzureIcons.Common.SERVICES);
         initializeNode();
+
     }
 
     public void initializeNode() {
