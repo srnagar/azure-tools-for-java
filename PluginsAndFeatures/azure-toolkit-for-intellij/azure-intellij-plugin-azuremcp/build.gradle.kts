@@ -11,6 +11,8 @@ dependencies {
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.idea.maven")
         bundledPlugin("com.intellij.gradle")
+        // GitHub Copilot plugin dependency for McpServerProvider extension point
+        plugin("com.github.copilot:1.5.59-243")
     }
 
     tasks.named("test", Test::class) {
