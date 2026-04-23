@@ -51,7 +51,7 @@ public class GitHubCopilotMcpProvider implements McpServerProvider {
                     @Nullable
                     @Override
                     public List<ExtInstalledMcpServerConfigurationItem> getConfigurationItems() {
-                        return List.of(new AzureMcpServerConfigurationItem(configString));
+                        return List.of((ExtInstalledMcpServerConfigurationItem) new AzureMcpServerConfigurationItem(configString));
                     }
                 };
             }
